@@ -2,17 +2,44 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_predict
 
+from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.01)
+    (X_train, y_train) = load_train_data(0.1)
+    sample_size = len(X_train)
+
+    baseline_model()
+    nvdiadder = AddNVDI()
+    X_train = nvdiadder.transform(X_train)
+
+
+
+    # # 2. Preprocess
+    # # Add NVDI
+    # nvdiadder = AddNVDI()
+    # X_train = nvdiadder.transform(X_train)
+    #
+    # plot_sample_images(X_train, y_train, 4)
+    # plot_sample_channels(X_train, y_train, 6)
+    #
+    # # Standardize
+    # standardizer = NDStandardScaler()
+    # X_train = standardizer.transform(X_train)
+    # # Extract statistics
+    # extract = StatisticsExtractor()
+    # X_train = extract.transform(X_train)
+    #
+    # assert X_train.shape == (sample_size, 2, 5)
+
+    # Extract features
 
     # plot_sample_images(X_train, y_train, number=8)
 
-    plot_sample_channels(X_train, y_train, 6)
     #
     # X_test = load_data("test_features_spam.csv")
     # y_test = load_data("test_labels_spam.csv").ravel()
@@ -47,6 +74,36 @@ def main():
     # # 5.-7. [Optional] Further investigations on own emails in text file format
     # # apply_to_own_mails(classifiers)
 
+###############################################################################
+###   modelling functions
+###############################################################################
+
+def baseline_model(X_train, y_train):
+    """
+    splits the training set into 80% training and 20% validation set (1-fold-cv)
+    trains a simple random forest with 100 trees on the data and outputs the validation accuracy
+    :param X_train: the (unflattened) X
+    :param y_train: the one-hot-encoded y
+    :return:
+    """
+    # flatten everything but the first dimension
+    X_train = np.transpose(X_train.reshape(-1, X_train.shape[0]))
+    # convert back from one-hot-encoding
+    y_train = np.argmax(y_train, axis=1)
+    # split into train and test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_train,
+        y_train,
+        test_size=0.2,
+        shuffle=True,
+        random_state=42
+    )
+    # Train simple classifier
+    rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    rf_clf.fit(X_train, y_train)
+    # evaluate
+    y_pred = rf_clf.predict(X_test)
+    print('Percentage correct: ', 100 * np.sum(y_pred == y_test) / len(y_test))
 
 ###############################################################################
 ###   utility functions
@@ -88,9 +145,12 @@ def plot_sample_images(tX, tY, number=4):
     :param tY: one-hot encoded labels
     :param number: the number of images to plot
     """
+    assert number >= 4
     fig, m_axs = plt.subplots(4, number // 4, figsize=(4, 4))
     for (x, y, c_ax) in zip(tX, tY, m_axs.flatten()):
-        c_ax.imshow(x[:, :, :3],  # since we don't want NIR in the display
+        print(x.shape)
+        print(x[1:3,1:3, :3])
+        c_ax.imshow(x[:, :, :3].astype(np.uint8),  # since we don't want NIR in the display
                     interpolation='none')
         c_ax.axis('off')
         c_ax.set_title('Cat:{}'.format(get_label(y)))
@@ -99,23 +159,24 @@ def plot_sample_images(tX, tY, number=4):
 
 def plot_sample_channels(tX, tY, number=3):
     """
-    :param tX:
-    :param tY:
-    :param number:
+    :param tX: input data
+    :param tY: labels
+    :param number: number of different examples
     """
-    fig, m_axs = plt.subplots(number, 5)
+    assert tX.shape[3] == 5 # assert 5 channels
+    fig, m_axs = plt.subplots(number, 6)
     imgs_to_plot = zip(tX, tY, m_axs[:, 0])
     for i, (x, y, c_ax) in enumerate(imgs_to_plot):
-        c_ax.imshow(x[:, :, :3],  # since we don't want NIR in the display
+        c_ax.imshow(x[:, :, :3].astype(np.uint8),  # since we don't want NIR and NVDI in the composite image
                     interpolation='none')
         c_ax.axis('off')
         c_ax.set_title('Cat:{}'.format(get_label(y)))
-        for (j, r_ax) in zip(range(0, 4), m_axs[i, 1:]):
+        for (j, r_ax) in zip(range(0, 5), m_axs[i, 1:]):
             r_ax.imshow(x[:, :, j],
                         interpolation='none',
                         cmap='gray')
             r_ax.axis('off')
-            channels = ['red', 'green', 'blue', 'nir']
+            channels = ['red', 'green', 'blue', 'nir', 'nvdi']
             r_ax.set_title(f'Ch:{channels[j]}')
 
     plt.show()
