@@ -1,4 +1,5 @@
 import numpy as np
+import skimage
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler
 
@@ -99,3 +100,20 @@ class StatisticsExtractor(TransformerMixin):
         stdevs = np.std(X, axis=(1, 2))
         return np.stack([means, stdevs], axis=1)
 
+
+class RGB2GrayTransformer(TransformerMixin):
+    """
+    Convert an array of RGB images to grayscale
+    Taken from https://kapernikov.com/tutorial-image-classification-with-scikit-learn/
+    """
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        """returns itself"""
+        return self
+
+    def transform(self, X, y=None):
+        """perform the transformation and return an array"""
+        return np.array([skimage.color.rgb2gray(img) for img in X])

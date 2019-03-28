@@ -7,17 +7,20 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_predict
 
-from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI
+from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer
 
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.01)
+    (X_train, y_train) = load_train_data(0.001)
     sample_size = len(X_train)
 
+    # Try to classify with grayscale images only
+    grayifier = RGB2GrayTransformer()
+    X_train = grayifier.fit_transform(X_train)
     baseline_model(X_train, y_train)
 
-    # # 2. Preprocess
+    # # Preprocess
     # # Add NVDI
     # nvdiadder = AddNVDI()
     # X_train = nvdiadder.transform(X_train)
@@ -87,11 +90,34 @@ def baseline_model(X_train, y_train):
     """
     # flatten everything but the first dimension
     X_train = np.transpose(X_train.reshape(-1, X_train.shape[0]))
+    # convert back from one-hot-encoding
+    y_train = np.argmax(y_train, axis=1)
+    # split up into training and validation set
+    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2)
+    # Train simple classifier
+    rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    rf_clf.fit(X_train, y_train)
+    # evaluate
+    y_pred = rf_clf.predict(X_val)
+    print('Percentage correct: ', 100 * np.sum(y_pred == y_val) / len(y_val))
+
+
+###############################################################################
+###   utility functions
+###############################################################################
+def create_validation_set(X_train, y_train, fraction=0.5):
+    """
+    splits the training data into a training and validation set
+    :param X_train: the features
+    :param y_train: the labels
+    :param fraction: the fraction of the test set
+    :return: a tuple (X_train, X_val, y_train, y_val)
+    """
     # split into train and test
     X_train, X_val, y_train, y_val = train_test_split(
         X_train,
         y_train,
-        test_size=0.2,
+        test_size=fraction,
         shuffle=True,
         random_state=42
     )
@@ -104,19 +130,9 @@ def baseline_model(X_train, y_train):
         'test ({0} photos)'.format(len(y_val))
     ])
     plt.show()
-    # convert back from one-hot-encoding
-    y_train = np.argmax(y_train, axis=1)
-    # Train simple classifier
-    rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
-    rf_clf.fit(X_train, y_train)
-    # evaluate
-    y_pred = rf_clf.predict(X_val)
-    print('Percentage correct: ', 100 * np.sum(y_pred == y_val) / len(y_val))
+    return X_train, X_val, y_train, y_val
 
 
-###############################################################################
-###   utility functions
-###############################################################################
 def load_train_data(fraction=1):
     """
     :param fraction: load only a fraction of the data
@@ -149,11 +165,14 @@ def get_label(y):
     return annotations[annotations[np.argmax(y) + 1] == 1][0].item()
 
 
+###############################################################################
+###   plotting functions
+###############################################################################
 def plot_label_distribution_bar(y, loc='left', relative=True):
     """
     plots a grouped bar chart of the y labels
     adapted from https://kapernikov.com/tutorial-image-classification-with-scikit-learn/
-    :param y: the train or validation labels as one-hot encoded vectors
+    :param y: the train or validation labels as integer scalars
     :param loc: left or right bar
     :param relative: if True percentages are shown
     :return:
@@ -165,7 +184,7 @@ def plot_label_distribution_bar(y, loc='left', relative=True):
         n = 0.5
 
     # calculate counts per type and sort, to ensure their order
-    unique, counts = np.unique(np.argmax(y, axis=1), return_counts=True)
+    unique, counts = np.unique(y, return_counts=True)
     sorted_index = np.argsort(unique)
     unique = unique[sorted_index]
 
