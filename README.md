@@ -15,22 +15,26 @@
 * https://scikit-learn.org/stable/auto_examples/classification/plot_digits_classification.html#sphx-glr-auto-examples-classification-plot-digits-classification-py
 * NVDI: https://en.wikipedia.org/wiki/Normalized_difference_vegetation_index
 
-### Results
+### Results 
+
+10% of the data, 0.8:0.2 train:validation
 
 #### No preprocessing, 3136 features
 
-10% of the data, 0.8:0.2 train:validation
-
-* RF with 100 trees: 34%
+* RF with 100 trees: 96% 
 
 #### No preprocessing, but NVDI added, 3920 features
 
-10% of the data, 0.8:0.2 train:validation
-
-* RF with 100 trees: 33%
+* RF with 100 trees: 97% (training took ca. 75sec)
 
 #### Only grayscale features, 784
 
-10% of the data, 0.8:0.2 train:validation
+* RF with 100 trees: there's still a bug!  (training took ca. 45sec)
 
-* RF with 100 trees: 38%
+#### Standardization, without NVDI, 3136 features
+
+* RF with 100 trees: 96%
+
+#### Standardization, NVDI, stats extracted, 10 features
+
+* RF with 100 trees: 99% (5 secs training)

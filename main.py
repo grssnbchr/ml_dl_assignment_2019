@@ -2,43 +2,47 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import confusion_matrix
+
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer
 
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.001)
+    (X_train, y_train) = load_train_data(0.1)
     sample_size = len(X_train)
 
-    # Try to classify with grayscale images only
-    grayifier = RGB2GrayTransformer()
-    X_train = grayifier.fit_transform(X_train)
-    baseline_model(X_train, y_train)
 
-    # # Preprocess
-    # # Add NVDI
-    # nvdiadder = AddNVDI()
-    # X_train = nvdiadder.transform(X_train)
-    #
+    # Preprocess
+    # Add NVDI
+    nvdiadder = AddNVDI()
+    X_train = nvdiadder.transform(X_train)
+
     # plot_sample_images(X_train, y_train, 4)
     # plot_sample_channels(X_train, y_train, 6)
-    #
-    # # Standardize
-    # standardizer = NDStandardScaler()
-    # X_train = standardizer.transform(X_train)
+
+    # Standardize
+    standardizer = NDStandardScaler()
+    X_train = standardizer.fit_transform(X_train)
+
+    # Try to classify with grayscale images only
+    # grayifier = RGB2GrayTransformer()
+    # X_train = grayifier.fit_transform(X_train)
+
+
     # # Extract statistics
-    # extract = StatisticsExtractor()
-    # X_train = extract.transform(X_train)
-    #
-    # assert X_train.shape == (sample_size, 2, 5)
+    extract = StatisticsExtractor()
+    X_train = extract.transform(X_train)
 
-    # Extract features
-
+    assert X_train.shape == (sample_size, 2, 5)
+    baseline_model(X_train, y_train, show_class_balance=False)
     # plot_sample_images(X_train, y_train, number=8)
 
     #
@@ -80,7 +84,7 @@ def main():
 ###   modelling functions
 ###############################################################################
 
-def baseline_model(X_train, y_train):
+def baseline_model(X_train, y_train, show_class_balance=True):
     """
     splits the training set into 80% training and 20% validation set (1-fold-cv)
     trains a simple random forest with 100 trees on the data and outputs the validation accuracy
@@ -89,23 +93,25 @@ def baseline_model(X_train, y_train):
     :return:
     """
     # flatten everything but the first dimension
-    X_train = np.transpose(X_train.reshape(-1, X_train.shape[0]))
+    X_train = X_train.reshape((-1, np.prod(X_train.shape[1:])))
     # convert back from one-hot-encoding
     y_train = np.argmax(y_train, axis=1)
     # split up into training and validation set
-    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2)
+    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
+                                                           show_class_balance=show_class_balance)
     # Train simple classifier
     rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     rf_clf.fit(X_train, y_train)
     # evaluate
     y_pred = rf_clf.predict(X_val)
     print('Percentage correct: ', 100 * np.sum(y_pred == y_val) / len(y_val))
-
+    print(confusion_matrix(y_pred, y_val))
+    plot_confusion_matrix(y_pred, y_val)
 
 ###############################################################################
 ###   utility functions
 ###############################################################################
-def create_validation_set(X_train, y_train, fraction=0.5):
+def create_validation_set(X_train, y_train, fraction=0.5, show_class_balance=True):
     """
     splits the training data into a training and validation set
     :param X_train: the features
@@ -121,15 +127,16 @@ def create_validation_set(X_train, y_train, fraction=0.5):
         shuffle=True,
         random_state=42
     )
-    # Plot distribution
-    plt.suptitle('relative distributions of classes in train and validation set')
-    plot_label_distribution_bar(y_train, loc='left')
-    plot_label_distribution_bar(y_val, loc='right')
-    plt.legend([
-        'train ({0} photos)'.format(len(y_train)),
-        'test ({0} photos)'.format(len(y_val))
-    ])
-    plt.show()
+    if show_class_balance is True:
+        # Plot distribution
+        plt.suptitle('relative distributions of classes in train and validation set')
+        plot_label_distribution_bar(y_train, loc='left')
+        plot_label_distribution_bar(y_val, loc='right')
+        plt.legend([
+            'train ({0} photos)'.format(len(y_train)),
+            'test ({0} photos)'.format(len(y_val))
+        ])
+        plt.show()
     return X_train, X_val, y_train, y_val
 
 
@@ -161,13 +168,47 @@ def get_label(y):
     :return: the colloquial name of the label
     """
     annotations = pd.read_csv('data/deepsat-sat6/sat6annotations.csv', header=None)
-
     return annotations[annotations[np.argmax(y) + 1] == 1][0].item()
 
 
 ###############################################################################
 ###   plotting functions
 ###############################################################################
+def plot_confusion_matrix(y_pred, y_val):
+    """
+    plots three confusion matrices: raw, percentage and with diagonals zeroed out
+    adapted from https://kapernikov.com/tutorial-image-classification-with-scikit-learn/
+    :param y_pred: predicted classes
+    :param y_val: true classes
+    """
+    cmx = confusion_matrix(y_pred, y_val)
+    cmx_norm = 100*cmx / cmx.sum(axis=1, keepdims=True)
+    cmx_zero_diag = cmx_norm.copy()
+
+    np.fill_diagonal(cmx_zero_diag, 0)
+
+    fig, ax = plt.subplots(ncols=3)
+    fig.set_size_inches(12, 3)
+    [a.set_xticks(range(6)) for a in ax]
+    [a.set_yticks(range(6)) for a in ax]
+
+    im1 = ax[0].imshow(cmx)
+    ax[0].set_title('as is')
+    im2 = ax[1].imshow(cmx_norm)
+    ax[1].set_title('%')
+    im3 = ax[2].imshow(cmx_zero_diag)
+    ax[2].set_title('% and 0 diagonal')
+
+    dividers = [make_axes_locatable(a) for a in ax]
+    cax1, cax2, cax3 = [divider.append_axes("right", size="5%", pad=0.1)
+                        for divider in dividers]
+
+    fig.colorbar(im1, cax=cax1)
+    fig.colorbar(im2, cax=cax2)
+    fig.colorbar(im3, cax=cax3)
+    fig.tight_layout()
+    plt.show()
+
 def plot_label_distribution_bar(y, loc='left', relative=True):
     """
     plots a grouped bar chart of the y labels
@@ -224,8 +265,6 @@ def plot_sample_images(tX, tY, number=4):
     assert number >= 4
     fig, m_axs = plt.subplots(4, number // 4, figsize=(4, 4))
     for (x, y, c_ax) in zip(tX, tY, m_axs.flatten()):
-        print(x.shape)
-        print(x[1:3, 1:3, :3])
         c_ax.imshow(x[:, :, :3].astype(np.uint8),  # since we don't want NIR in the display
                     interpolation='none')
         c_ax.axis('off')
