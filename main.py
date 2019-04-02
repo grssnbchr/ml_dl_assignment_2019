@@ -7,7 +7,7 @@ from scipy.stats import randint as sp_randint
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 from sklearn.pipeline import Pipeline
@@ -15,8 +15,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer, Flattener
 
-def main():
 
+def main():
     # 1. Load train data
     (X_train, y_train) = load_train_data(0.01)
     sample_size = len(X_train)
@@ -63,29 +63,35 @@ def main():
     ])
     pipe.get_params()
 
-    param_grid = {'nvdiadder': [None, AddNVDI()], # variation: add NVDI or not,
-         'standardizer': [None, NDStandardScaler()], # variation: add NDStandardScaler or not
-         'rf__max_features': sp_randint(1, 9),
-         'rf__n_estimators': sp_randint(10, 1000)}
+    param_grid = [{
+        'nvdiadder': [None, AddNVDI()],  # variation: add NVDI or not,
+        'standardizer': [None, NDStandardScaler()],  # variation: add NDStandardScaler or not
+        'rf__max_features': [1, 3, 6, 9],
+        'rf__n_estimators': [10, 20, 50, 100, 500]
+    }
+    ]
 
-
-    grid = RandomizedSearchCV(pipe,
+    # TODO: add custom scorer that maximizes lowest value in classification report
+    grid = GridSearchCV(pipe,
                         param_grid,
                         cv=3,
                         n_jobs=-1,
-                        scoring='accuracy',
-                        verbose=2,
-                        n_iter=3,
-                        refit=True,
-                        return_train_score=True)
+                        scoring=['accuracy', 'f1_weighted'],
+                        verbose=1,
+                        refit='f1_weighted',
+                        return_train_score=True,
+                        error_score=np.nan)
     grid.fit(X_train, y_train)
-    print(grid.best_score_)
-    print(grid.best_params_)
+    print(f'best f1_weighted value: {grid.best_score_}')
+    print(f'winning params: {grid.best_params_}')
     # predict on hold-out validation set using best estimator
     best_pred = grid.predict(X_val)
-    print(accuracy_score(y_val, best_pred))
+    print(f'accuracy on the validation set: {accuracy_score(y_val, best_pred)}')
     print(classification_report(y_val, best_pred))
     plot_confusion_matrix(y_val, best_pred)
+    # TODO: visualize grid results
+    # TODO: plot feature importance
+
 
 ###############################################################################
 ###   modelling functions
@@ -115,6 +121,7 @@ def train_and_evaluate_model(X_train, y_train, show_class_balance=True):
     print(classification_report(y_val, y_pred))
     print(confusion_matrix(y_pred, y_val))
     plot_confusion_matrix(y_pred, y_val)
+
 
 ###############################################################################
 ###   utility functions
@@ -192,7 +199,7 @@ def plot_confusion_matrix(y_pred, y_val):
     :param y_val: true classes
     """
     cmx = confusion_matrix(y_pred, y_val)
-    cmx_norm = 100*cmx / cmx.sum(axis=1, keepdims=True)
+    cmx_norm = 100 * cmx / cmx.sum(axis=1, keepdims=True)
     cmx_zero_diag = cmx_norm.copy()
 
     np.fill_diagonal(cmx_zero_diag, 0)
@@ -218,6 +225,7 @@ def plot_confusion_matrix(y_pred, y_val):
     fig.colorbar(im3, cax=cax3)
     fig.tight_layout()
     plt.show()
+
 
 def plot_label_distribution_bar(y, loc='left', relative=True):
     """
@@ -256,7 +264,7 @@ def plot_label_distribution_bar(y, loc='left', relative=True):
     labels = list(
         np.apply_along_axis(
             arr=enc.fit_transform(unique.reshape(len(unique), 1)),
-            func1d=get_label, # extract colloquial names
+            func1d=get_label,  # extract colloquial names
             axis=0
         )
     )
@@ -305,6 +313,7 @@ def plot_sample_channels(tX, tY, number=3):
             r_ax.set_title(f'Ch:{channels[j]}')
 
     plt.show()
+
 
 
 if __name__ == '__main__':

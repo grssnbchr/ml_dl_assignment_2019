@@ -8,7 +8,10 @@
 ### Resources
 
 * Scikit-Image: scikit-image.org/
-
+* Implementing scoring function: https://scikit-learn.org/stable/modules/model_evaluation.html#defining-your-scoring-strategy-from-metric-functions
+* Visualizing hyperparameter performance: https://scikit-learn.org/stable/auto_examples/model_selection/plot_multi_metric_evaluation.html#demonstration-of-multi-metric-evaluation-on-cross-val-score-and-gridsearchcv
+* And: https://scikit-learn.org/stable/auto_examples/svm/plot_rbf_parameters.html
+* Randomized search through hyper parameters: https://www.pyimagesearch.com/2016/08/15/how-to-tune-hyperparameters-with-python-and-scikit-learn/
 ### Tutorials
 
 * https://kapernikov.com/tutorial-image-classification-with-scikit-learn/
