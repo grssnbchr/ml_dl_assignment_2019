@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import pickle
 
 from scipy.stats import randint as sp_randint
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 from sklearn.pipeline import Pipeline
@@ -18,7 +19,7 @@ from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, R
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.01)
+    (X_train, y_train) = load_train_data(0.1)
     sample_size = len(X_train)
     # create a 20% hold-out-validation set
     X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
@@ -40,10 +41,11 @@ def main():
     # # X_train = grayifier.fit_transform(X_train)
     #
     #
-    # # # Extract statistics
+    # # Extract statistics
     # extract = StatisticsExtractor()
     # X_train = extract.transform(X_train)
-    #
+    # plot_channel_histograms(X_train, y_train, max_channel=5)
+
     # assert X_train.shape == (sample_size, 2, 5)
     # train_and_evaluate_model(X_train, y_train, show_class_balance=False)
 
@@ -63,26 +65,40 @@ def main():
     ])
     pipe.get_params()
 
-    param_grid = [{
+    param_grid = {
         'nvdiadder': [None, AddNVDI()],  # variation: add NVDI or not,
         'standardizer': [None, NDStandardScaler()],  # variation: add NDStandardScaler or not
-        'rf__max_features': [1, 3, 6, 9],
-        'rf__n_estimators': [10, 20, 50, 100, 500]
+        'statsextractor': [None, StatisticsExtractor()],  # variation: add StatisticsExtractor or not
+        'rf__n_estimators': [int(x) for x in np.linspace(start=100, stop=2000, num=10)],
+        'rf__max_features': ['auto', 'sqrt'],
+        'rf__max_depth': [int(x) for x in np.linspace(10, 110, num=11)],
+        'rf__min_samples_leaf': [1, 2, 4],
+        'rf__bootstrap': [True, False]
     }
-    ]
 
     # TODO: add custom scorer that maximizes lowest value in classification report
-    grid = GridSearchCV(pipe,
-                        param_grid,
-                        cv=3,
-                        n_jobs=-1,
-                        scoring=['accuracy', 'f1_weighted'],
-                        verbose=1,
-                        refit='f1_weighted',
-                        return_train_score=True,
-                        error_score=np.nan)
+    grid = RandomizedSearchCV(pipe,
+                              param_grid,
+                              n_iter=100,
+                              random_state=42,
+                              cv=3,
+                              n_jobs=-1,
+                              scoring='accuracy',
+                              verbose=2,
+                              return_train_score=True,
+                              error_score=np.nan)
     grid.fit(X_train, y_train)
-    print(f'best f1_weighted value: {grid.best_score_}')
+    with open('/data/randomized_search', "w") as fp:
+        pickle.dump(grid, fp)
+
+    # # Load model from file
+    # with open('/data/model_pickle_file', "r") as fp:
+    #     grid_search_load = pickle.load(fp)
+    #
+    # # Predict new data with model loaded from disk
+    # y_new = grid_search_load.best_estimator_.predict(X_new)
+
+    print(f'best accuracy: {grid.best_score_}')
     print(f'winning params: {grid.best_params_}')
     # predict on hold-out validation set using best estimator
     best_pred = grid.predict(X_val)
@@ -292,8 +308,9 @@ def plot_sample_images(tX, tY, number=4):
 
 def plot_sample_channels(tX, tY, number=3):
     """
+    Plots grayscale images of each channel
     :param tX: input data
-    :param tY: labels
+    :param tY: one-hot encoded labels
     :param number: number of different examples
     """
     assert tX.shape[3] == 5  # assert 5 channels
@@ -314,6 +331,53 @@ def plot_sample_channels(tX, tY, number=3):
 
     plt.show()
 
+
+def plot_channel_histograms(tX, tY, max_channel=4):
+    """
+    Plots a max_channel x label grid of histograms for each label and channel
+    :param tX: the training data
+    :param tY: the one-hot encoded labels
+    :param max_channel: how many channels to plot?
+    :return: None
+    """
+    fig = plt.figure()
+    i = 0
+    for label in np.unique(tY, axis=0):
+        for channel in range(0, max_channel):
+            ax = fig.add_subplot(len(np.unique(tY, axis=0)), max_channel, i + 1)
+            plot_channel_histogram(ax, tX, tY, channel, label)
+            i += 1
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_channel_histogram(ax, tX, tY, channel=1, label=0):
+    """
+    Plots a single histogram of mean value distributions for the given channel and label
+    :param ax: the current axis of the plot
+    :param tX: the training data
+    :param tY: the training labels as one-hot-encoded vector
+    :param channel: the channel to be plotted
+    :param label: the label to be plotted
+    :return: None
+    """
+    # extract idx of tY with label=label
+    tY_scalar = np.argmax(tY, axis=1)
+    label_scalar = np.argmax(label)
+    idx_label = tY_scalar == label_scalar
+    # extract channel from tX numpy array
+    tX_label = tX[idx_label]
+    # slice
+    tX_to_plot = tX_label[:, 0, channel]  # always extract mean
+    # flatten
+    ax.hist(tX_to_plot, bins=10)
+    # if nvdi should be plotted as well
+    if channel is 4:
+        plt.xlim(0, 1)
+    else:
+        plt.xlim(0, 255)
+    channels = ['red', 'green', 'blue', 'nir', 'nvdi']
+    ax.set_title(f'channel: {channels[channel]}, label: {get_label(label)}')
 
 
 if __name__ == '__main__':
