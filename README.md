@@ -35,6 +35,44 @@
 
 * RF with 100 trees: 96%
 
+#### Standardization, stats extracted, 8 features
+
+* RF with 100 trees: 98.8%
+
+```
+Percentage correct:  98.79629629629629
+              precision    recall  f1-score   support
+
+           0       0.95      0.97      0.96       311
+           1       0.99      0.98      0.99      1430
+           2       0.99      1.00      0.99      1111
+           3       0.98      0.97      0.98      1034
+           4       0.94      0.91      0.92       149
+           5       1.00      1.00      1.00      2445
+
+   micro avg       0.99      0.99      0.99      6480
+   macro avg       0.97      0.97      0.97      6480
+weighted avg       0.99      0.99      0.99      6480
+```
+
 #### Standardization, NVDI, stats extracted, 10 features
 
-* RF with 100 trees: 99% (5 secs training)
+* RF with 100 trees: 99.0% (5 secs training)
+
+```
+Percentage correct:  98.99691358024691
+              precision    recall  f1-score   support
+
+           0       0.97      0.97      0.97       311
+           1       0.99      0.99      0.99      1430
+           2       0.99      1.00      0.99      1111
+           3       0.98      0.98      0.98      1034
+           4       0.94      0.95      0.94       149
+           5       1.00      1.00      1.00      2445
+
+   micro avg       0.99      0.99      0.99      6480
+   macro avg       0.98      0.98      0.98      6480
+weighted avg       0.99      0.99      0.99      6480
+```
+
+* Adding NVDI made the f1-score for the 4th class a bit better by 2 percentage points

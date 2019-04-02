@@ -7,7 +7,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -16,7 +16,7 @@ from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, R
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.1)
+    (X_train, y_train) = load_train_data(0.01)
     sample_size = len(X_train)
 
 
@@ -42,49 +42,15 @@ def main():
     X_train = extract.transform(X_train)
 
     assert X_train.shape == (sample_size, 2, 5)
-    baseline_model(X_train, y_train, show_class_balance=False)
+    train_and_evaluate_model(X_train, y_train, show_class_balance=False)
     # plot_sample_images(X_train, y_train, number=8)
-
-    #
-    # X_test = load_data("test_features_spam.csv")
-    # y_test = load_data("test_labels_spam.csv").ravel()
-    #
-    # # 2. Train different models
-    # algorithms = [
-    #     SVC(**params_svm_linear),
-    #     SVC(**params_svm_rbf),
-    #     LogisticRegression(),
-    #     MultinomialNB(**params_naive_bayes),
-    #     RandomForestClassifier(**params_random_forest),
-    #     AdaBoostClassifier(**params_ada_boost)]
-    # classifiers = train_models(algorithms, X_train, y_train)
-    #
-    # # 3. Apply the trained models
-    # apply_models(classifiers, X_test, y_test)
-    #
-    # # 3.1 Apply majority vote ensemble of ensembles
-    # predictions = apply_models_majority_vote(classifiers, X_test)
-    # test_accuracy = calc_accuracy(predictions, y_test)
-    # print('Testing with majority vote (aggregated):')
-    # print('\tAccuracy with %d %ss: %.5f' % (len(classifiers), classifiers[0].__class__.__name__, test_accuracy))
-    #
-    # predictions = apply_models_majority_vote(classifiers, X_test, aggregated=False)
-    # test_accuracy = calc_accuracy(predictions, y_test)
-    # print('Testing with majority vote (not aggregated):')
-    # print('\tAccuracy with %d %ss: %.5f' % (len(classifiers), classifiers[0].__class__.__name__, test_accuracy))
-    #
-    # # 4. Write predictions to submission file
-    # write_predictions('submission_spam.csv', X_test, predictions)
-    #
-    # # 5.-7. [Optional] Further investigations on own emails in text file format
-    # # apply_to_own_mails(classifiers)
 
 
 ###############################################################################
 ###   modelling functions
 ###############################################################################
 
-def baseline_model(X_train, y_train, show_class_balance=True):
+def train_and_evaluate_model(X_train, y_train, show_class_balance=True):
     """
     splits the training set into 80% training and 20% validation set (1-fold-cv)
     trains a simple random forest with 100 trees on the data and outputs the validation accuracy
@@ -104,7 +70,8 @@ def baseline_model(X_train, y_train, show_class_balance=True):
     rf_clf.fit(X_train, y_train)
     # evaluate
     y_pred = rf_clf.predict(X_val)
-    print('Percentage correct: ', 100 * np.sum(y_pred == y_val) / len(y_val))
+    print('Percentage correct: ', 100 * accuracy_score(y_val, y_pred))
+    print(classification_report(y_val, y_pred))
     print(confusion_matrix(y_pred, y_val))
     plot_confusion_matrix(y_pred, y_val)
 
