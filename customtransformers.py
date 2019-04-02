@@ -1,10 +1,10 @@
 import numpy as np
 import skimage
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
 
-class NDStandardScaler(TransformerMixin):
+class NDStandardScaler(BaseEstimator, TransformerMixin):
     """
     Applies StandardScaler, but for arrays with more than two dimensions.
     "It simply flattens the features of the input before giving it to sklearn's StandardScaler.
@@ -15,7 +15,7 @@ class NDStandardScaler(TransformerMixin):
         self._scaler = StandardScaler(copy=True, **kwargs)
         self._orig_shape = None
 
-    def fit(self, X, **kwargs):
+    def fit(self, X, y=None, **kwargs):
         X = np.array(X)
         # Save the original shape to reshape the flattened X later
         # back to its original shape
@@ -25,7 +25,7 @@ class NDStandardScaler(TransformerMixin):
         self._scaler.fit(X, **kwargs)
         return self
 
-    def transform(self, X, **kwargs):
+    def transform(self, X, y=None, **kwargs):
         X = np.array(X)
         X = self._flatten(X)
         X = self._scaler.transform(X, **kwargs)
@@ -46,7 +46,28 @@ class NDStandardScaler(TransformerMixin):
         return X
 
 
-class AddNVDI(TransformerMixin):
+class Flattener(BaseEstimator, TransformerMixin):
+    """
+    Flattens the data to a (sample_size, feature_length) tuple
+    """
+    def __init__(self, **kwargs):
+        pass
+
+    def fit(self, X, y=None, **kwargs):
+        """returns itself"""
+        return self
+
+    def transform(self, X, y=None, **kwargs):
+        """
+        :param X: the numpy array to be flattened
+        :return: the flattened X
+        """
+        # flatten everything but the first dimension
+        X = X.reshape((-1, np.prod(X.shape[1:])))
+        return X
+
+
+class AddNVDI(BaseEstimator, TransformerMixin):
     """
     Adds a fifth channel NVDI that is composed
     """
@@ -76,7 +97,7 @@ class AddNVDI(TransformerMixin):
                               axis=3) # (NIR - red) / (NIR + red)
 
 
-class StatisticsExtractor(TransformerMixin):
+class StatisticsExtractor(BaseEstimator, TransformerMixin):
     """
     Extracts mean and standard deviation for every channel in an image
     """
@@ -101,7 +122,7 @@ class StatisticsExtractor(TransformerMixin):
         return np.stack([means, stdevs], axis=1)
 
 
-class RGB2GrayTransformer(TransformerMixin):
+class RGB2GrayTransformer(BaseEstimator, TransformerMixin):
     """
     Convert an array of RGB images to grayscale
     Taken from https://kapernikov.com/tutorial-image-classification-with-scikit-learn/

@@ -5,46 +5,89 @@ import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
+from sklearn.pipeline import Pipeline
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer
+from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer, Flattener
 
+import warnings
+from sklearn.exceptions import DataConversionWarning
+# suppress certain warnings
+warnings.filterwarnings(action='ignore', category=DataConversionWarning) # TODO doesnt work
 
 def main():
+
     # 1. Load train data
     (X_train, y_train) = load_train_data(0.01)
     sample_size = len(X_train)
+    # create a 20% hold-out-validation set
+    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
+                                                           show_class_balance=True)
+    # # Preprocess
+    # # Add NVDI
+    # nvdiadder = AddNVDI()
+    # X_train = nvdiadder.transform(X_train)
+    #
+    # # plot_sample_images(X_train, y_train, 4)
+    # # plot_sample_channels(X_train, y_train, 6)
+    #
+    # # Standardize
+    # standardizer = NDStandardScaler()
+    # X_train = standardizer.fit_transform(X_train)
+    #
+    # # Try to classify with grayscale images only
+    # # grayifier = RGB2GrayTransformer()
+    # # X_train = grayifier.fit_transform(X_train)
+    #
+    #
+    # # # Extract statistics
+    # extract = StatisticsExtractor()
+    # X_train = extract.transform(X_train)
+    #
+    # assert X_train.shape == (sample_size, 2, 5)
+    # train_and_evaluate_model(X_train, y_train, show_class_balance=False)
 
-
-    # Preprocess
-    # Add NVDI
-    nvdiadder = AddNVDI()
-    X_train = nvdiadder.transform(X_train)
-
-    # plot_sample_images(X_train, y_train, 4)
-    # plot_sample_channels(X_train, y_train, 6)
-
-    # Standardize
-    standardizer = NDStandardScaler()
-    X_train = standardizer.fit_transform(X_train)
-
-    # Try to classify with grayscale images only
-    # grayifier = RGB2GrayTransformer()
-    # X_train = grayifier.fit_transform(X_train)
-
-
-    # # Extract statistics
-    extract = StatisticsExtractor()
-    X_train = extract.transform(X_train)
-
-    assert X_train.shape == (sample_size, 2, 5)
-    train_and_evaluate_model(X_train, y_train, show_class_balance=False)
     # plot_sample_images(X_train, y_train, number=8)
 
+    # convert back from one-hot-encoding
+    y_train = np.argmax(y_train, axis=1)
+    y_val = np.argmax(y_val, axis=1)
+    # build a pipeline
+    # TODO: add memory https://scikit-learn.org/stable/modules/compose.html#caching-transformers-avoid-repeated-computation
+    pipe = Pipeline([
+        ('nvdiadder', AddNVDI()),
+        ('standardizer', NDStandardScaler()),
+        ('statsextractor', StatisticsExtractor()),
+        ('flattener', Flattener()),
+        ('rf', RandomForestClassifier())
+    ])
+    pipe.get_params()
+
+    param_grid = [
+        {'nvdiadder': [None, AddNVDI()], # variation: add NVDI or not,
+         'standardizer': [None, NDStandardScaler()], # variation: add NDStandardScaler or not
+         'rf__max_features': [3],
+         'rf__n_estimators': [10]}
+    ]
+    # TODO: apply OOB, as RF already has this https://scikit-learn.org/stable/modules/grid_search.html#out-of-bag-estimates
+    grid = GridSearchCV(pipe,
+                        param_grid,
+                        cv=5,
+                        n_jobs=-1,
+                        scoring='accuracy',
+                        verbose=1,
+                        error_score=0,
+                        return_train_score=True)
+    grid.fit(X_train, y_train)
+    print(grid.best_score_)
+    print(grid.best_params_)
+    # predict on hold-out validation set using best estimator
+    best_pred = grid.predict(X_val)
+    print(classification_report(y_val, best_pred))
+    plot_confusion_matrix(y_val, best_pred)
 
 ###############################################################################
 ###   modelling functions
@@ -58,13 +101,13 @@ def train_and_evaluate_model(X_train, y_train, show_class_balance=True):
     :param y_train: the one-hot-encoded y
     :return:
     """
+    # split up into training and validation set
+    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
+                                                           show_class_balance=show_class_balance)
     # flatten everything but the first dimension
     X_train = X_train.reshape((-1, np.prod(X_train.shape[1:])))
     # convert back from one-hot-encoding
     y_train = np.argmax(y_train, axis=1)
-    # split up into training and validation set
-    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
-                                                           show_class_balance=show_class_balance)
     # Train simple classifier
     rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     rf_clf.fit(X_train, y_train)
@@ -82,7 +125,7 @@ def create_validation_set(X_train, y_train, fraction=0.5, show_class_balance=Tru
     """
     splits the training data into a training and validation set
     :param X_train: the features
-    :param y_train: the labels
+    :param y_train: the one-hot-encoded labels
     :param fraction: the fraction of the test set
     :return: a tuple (X_train, X_val, y_train, y_val)
     """
@@ -95,10 +138,12 @@ def create_validation_set(X_train, y_train, fraction=0.5, show_class_balance=Tru
         random_state=42
     )
     if show_class_balance is True:
+        yt = np.argmax(y_train, axis=1)
+        yv = np.argmax(y_val, axis=1)
         # Plot distribution
         plt.suptitle('relative distributions of classes in train and validation set')
-        plot_label_distribution_bar(y_train, loc='left')
-        plot_label_distribution_bar(y_val, loc='right')
+        plot_label_distribution_bar(yt, loc='left')
+        plot_label_distribution_bar(yv, loc='right')
         plt.legend([
             'train ({0} photos)'.format(len(y_train)),
             'test ({0} photos)'.format(len(y_val))

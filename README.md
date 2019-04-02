@@ -58,6 +58,7 @@ weighted avg       0.99      0.99      0.99      6480
 #### Standardization, NVDI, stats extracted, 10 features
 
 * RF with 100 trees: 99.0% (5 secs training)
+* The same with only 1% of training data: 97.5%
 
 ```
 Percentage correct:  98.99691358024691
