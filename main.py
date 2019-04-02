@@ -3,9 +3,11 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+from scipy.stats import randint as sp_randint
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 from sklearn.pipeline import Pipeline
@@ -61,26 +63,27 @@ def main():
     ])
     pipe.get_params()
 
-    param_grid = [
-        {'nvdiadder': [None, AddNVDI()], # variation: add NVDI or not,
+    param_grid = {'nvdiadder': [None, AddNVDI()], # variation: add NVDI or not,
          'standardizer': [None, NDStandardScaler()], # variation: add NDStandardScaler or not
-         'rf__max_features': [3, 6, 9],
-         'rf__n_estimators': [10, 100, 300]}
-    ]
+         'rf__max_features': sp_randint(1, 9),
+         'rf__n_estimators': sp_randint(10, 1000)}
 
-    grid = GridSearchCV(pipe,
+
+    grid = RandomizedSearchCV(pipe,
                         param_grid,
-                        cv=5,
+                        cv=3,
                         n_jobs=-1,
                         scoring='accuracy',
                         verbose=2,
-                        error_score=0,
+                        n_iter=3,
+                        refit=True,
                         return_train_score=True)
     grid.fit(X_train, y_train)
     print(grid.best_score_)
     print(grid.best_params_)
     # predict on hold-out validation set using best estimator
     best_pred = grid.predict(X_val)
+    print(accuracy_score(y_val, best_pred))
     print(classification_report(y_val, best_pred))
     plot_confusion_matrix(y_val, best_pred)
 
