@@ -3,6 +3,8 @@ import skimage
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
+import warnings
+from sklearn.exceptions import DataConversionWarning
 
 class NDStandardScaler(BaseEstimator, TransformerMixin):
     """
@@ -22,13 +24,17 @@ class NDStandardScaler(BaseEstimator, TransformerMixin):
         if len(X.shape) > 1:
             self._orig_shape = X.shape[1:]
         X = self._flatten(X)
-        self._scaler.fit(X, **kwargs)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+            self._scaler.fit(X, **kwargs)
         return self
 
     def transform(self, X, y=None, **kwargs):
         X = np.array(X)
         X = self._flatten(X)
-        X = self._scaler.transform(X, **kwargs)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+            X = self._scaler.transform(X, **kwargs)
         X = self._reshape(X)
         return X
 

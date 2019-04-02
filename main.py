@@ -13,11 +13,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, RGB2GrayTransformer, Flattener
 
-import warnings
-from sklearn.exceptions import DataConversionWarning
-# suppress certain warnings
-warnings.filterwarnings(action='ignore', category=DataConversionWarning) # TODO doesnt work
-
 def main():
 
     # 1. Load train data
@@ -25,7 +20,7 @@ def main():
     sample_size = len(X_train)
     # create a 20% hold-out-validation set
     X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
-                                                           show_class_balance=True)
+                                                           show_class_balance=False)
     # # Preprocess
     # # Add NVDI
     # nvdiadder = AddNVDI()
@@ -69,16 +64,16 @@ def main():
     param_grid = [
         {'nvdiadder': [None, AddNVDI()], # variation: add NVDI or not,
          'standardizer': [None, NDStandardScaler()], # variation: add NDStandardScaler or not
-         'rf__max_features': [3],
-         'rf__n_estimators': [10]}
+         'rf__max_features': [3, 6, 9],
+         'rf__n_estimators': [10, 100, 300]}
     ]
-    # TODO: apply OOB, as RF already has this https://scikit-learn.org/stable/modules/grid_search.html#out-of-bag-estimates
+
     grid = GridSearchCV(pipe,
                         param_grid,
                         cv=5,
                         n_jobs=-1,
                         scoring='accuracy',
-                        verbose=1,
+                        verbose=2,
                         error_score=0,
                         return_train_score=True)
     grid.fit(X_train, y_train)
