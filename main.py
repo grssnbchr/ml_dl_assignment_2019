@@ -22,23 +22,24 @@ def main():
     (X_train, y_train) = load_train_data(0.1)
     sample_size = len(X_train)
     # create a 20% hold-out-validation set
-    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
-                                                           show_class_balance=False)
+    X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2, show_class_balance=False)
+
     # # Preprocess
-    # # Add NVDI
+    # Add NVDI
     # nvdiadder = AddNVDI()
     # X_train = nvdiadder.transform(X_train)
     #
     # # plot_sample_images(X_train, y_train, 4)
     # # plot_sample_channels(X_train, y_train, 6)
     #
+    # # Try to classify with grayscale images only
+    # grayifier = RGB2GrayTransformer()
+    # X_train = grayifier.fit_transform(X_train)
+
     # # Standardize
     # standardizer = NDStandardScaler()
     # X_train = standardizer.fit_transform(X_train)
     #
-    # # Try to classify with grayscale images only
-    # # grayifier = RGB2GrayTransformer()
-    # # X_train = grayifier.fit_transform(X_train)
     #
     #
     # # Extract statistics
@@ -46,8 +47,8 @@ def main():
     # X_train = extract.transform(X_train)
     # plot_channel_histograms(X_train, y_train, max_channel=5)
 
-    # assert X_train.shape == (sample_size, 2, 5)
-    # train_and_evaluate_model(X_train, y_train, show_class_balance=False)
+    # assert X_train.shape == (sample_size, 28, 28, 1)
+    # train_and_evaluate_model(X_train, y_train, show_class_balance=True)
 
     # plot_sample_images(X_train, y_train, number=8)
 
@@ -63,8 +64,6 @@ def main():
         ('flattener', Flattener()),
         ('rf', RandomForestClassifier())
     ])
-    pipe.get_params()
-
     param_grid = {
         'nvdiadder': [None, AddNVDI()],  # variation: add NVDI or not,
         'standardizer': [None, NDStandardScaler()],  # variation: add NDStandardScaler or not
@@ -75,7 +74,6 @@ def main():
         'rf__min_samples_leaf': [1, 2, 4],
         'rf__bootstrap': [True, False]
     }
-
     # TODO: add custom scorer that maximizes lowest value in classification report
     grid = RandomizedSearchCV(pipe,
                               param_grid,
@@ -121,13 +119,17 @@ def train_and_evaluate_model(X_train, y_train, show_class_balance=True):
     :param y_train: the one-hot-encoded y
     :return:
     """
+    # flatten everything but the first dimension
+    X_train = X_train.reshape((-1, np.prod(X_train.shape[1:])))
+
+
     # split up into training and validation set
     X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2,
                                                            show_class_balance=show_class_balance)
-    # flatten everything but the first dimension
-    X_train = X_train.reshape((-1, np.prod(X_train.shape[1:])))
     # convert back from one-hot-encoding
     y_train = np.argmax(y_train, axis=1)
+    y_val = np.argmax(y_val, axis=1)
+
     # Train simple classifier
     rf_clf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     rf_clf.fit(X_train, y_train)
@@ -148,7 +150,7 @@ def create_validation_set(X_train, y_train, fraction=0.5, show_class_balance=Tru
     :param X_train: the features
     :param y_train: the one-hot-encoded labels
     :param fraction: the fraction of the test set
-    :return: a tuple (X_train, X_val, y_train, y_val)
+    :return: a tuple (X_train, X_val, y_train, y_val), where the y values are still one-hot-encoded
     """
     # split into train and test
     X_train, X_val, y_train, y_val = train_test_split(

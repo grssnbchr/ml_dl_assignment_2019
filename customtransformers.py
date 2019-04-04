@@ -143,4 +143,4 @@ class RGB2GrayTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         """perform the transformation and return an array"""
-        return np.array([skimage.color.rgb2gray(img) for img in X])
+        return np.expand_dims(np.array([skimage.color.rgb2gray(img) for img in X]), axis=-1)

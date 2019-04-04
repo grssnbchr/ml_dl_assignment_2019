@@ -12,11 +12,14 @@
 * Visualizing hyperparameter performance: https://scikit-learn.org/stable/auto_examples/model_selection/plot_multi_metric_evaluation.html#demonstration-of-multi-metric-evaluation-on-cross-val-score-and-gridsearchcv
 * And: https://scikit-learn.org/stable/auto_examples/svm/plot_rbf_parameters.html
 * Randomized search through hyper parameters: https://www.pyimagesearch.com/2016/08/15/how-to-tune-hyperparameters-with-python-and-scikit-learn/
+
 ### Tutorials
 
 * https://kapernikov.com/tutorial-image-classification-with-scikit-learn/
 * https://scikit-learn.org/stable/auto_examples/classification/plot_digits_classification.html#sphx-glr-auto-examples-classification-plot-digits-classification-py
 * NVDI: https://en.wikipedia.org/wiki/Normalized_difference_vegetation_index
+* Using Sklearn with Keras: https://machinelearningmastery.com/use-keras-deep-learning-models-scikit-learn-python/
+* Grid Search for Deep Learning: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
 
 ### Results 
 
@@ -32,7 +35,7 @@
 
 #### Only grayscale features, 784
 
-* RF with 100 trees: there's still a bug!  (training took ca. 45sec)
+* RF with 100 trees: 83.9%
 
 #### Standardization, without NVDI, 3136 features
 
