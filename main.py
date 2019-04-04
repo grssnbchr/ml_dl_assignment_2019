@@ -67,7 +67,7 @@ def main():
     param_grid = {
         'nvdiadder': [None, AddNVDI()],  # variation: add NVDI or not,
         'standardizer': [None, NDStandardScaler()],  # variation: add NDStandardScaler or not
-        'statsextractor': [None, StatisticsExtractor()],  # variation: add StatisticsExtractor or not
+        'statsextractor': [StatisticsExtractor()],  # variation: add StatisticsExtractor or not
         'rf__n_estimators': [int(x) for x in np.linspace(start=100, stop=2000, num=10)],
         'rf__max_features': ['auto', 'sqrt'],
         'rf__max_depth': [int(x) for x in np.linspace(10, 110, num=11)],
@@ -86,7 +86,7 @@ def main():
                               return_train_score=True,
                               error_score=np.nan)
     grid.fit(X_train, y_train)
-    with open('/data/randomized_search', "w") as fp:
+    with open('data/randomized_search', 'wb') as fp:
         pickle.dump(grid, fp)
 
     # # Load model from file
@@ -102,7 +102,14 @@ def main():
     best_pred = grid.predict(X_val)
     print(f'accuracy on the validation set: {accuracy_score(y_val, best_pred)}')
     print(classification_report(y_val, best_pred))
-    plot_confusion_matrix(y_val, best_pred)
+    # plot_confusion_matrix(y_val, best_pred)
+    X_test, y_test = load_train_data(test=True, fraction=1)
+    # convert back from one-hot-encoding
+    y_test = np.argmax(y_test, axis=1)
+    best_pred_test = grid.predict(X_test)
+    print(f'accuracy on the test set: {accuracy_score(y_test, best_pred_test)}')
+    print(classification_report(y_test, best_pred_test))
+    # plot_confusion_matrix(y_test, best_pred_test)
     # TODO: visualize grid results
     # TODO: plot feature importance
 
@@ -175,23 +182,26 @@ def create_validation_set(X_train, y_train, fraction=0.5, show_class_balance=Tru
     return X_train, X_val, y_train, y_val
 
 
-def load_train_data(fraction=1):
+def load_train_data(test=False, fraction=1):
     """
+    :param test: load test data instead of train data
     :param fraction: load only a fraction of the data
     :return: the pre-processed X and y data as a tuple of tow numpy array of
     shape (sample_size, x, y, channels) and (sample_size, 6), respectively
     """
+    X_url = f'data/deepsat-sat6/X_{"test" if test else "train"}_sat6.csv'
+    y_url = f'data/deepsat-sat6/y_{"test" if test else "train"}_sat6.csv'
     # X
-    row_number = 324000
+    row_number = 324000 if not test else 81000
     rows = math.ceil(row_number * fraction)
-    X_df = pd.read_csv('data/deepsat-sat6/X_train_sat6.csv', header=None, sep=',', nrows=rows)
+    X_df = pd.read_csv(X_url, header=None, sep=',', nrows=rows)
     # unfold
     X_np = np.array(X_df)
     X_train = X_np.reshape((-1,
                             28,
                             28,
                             4))
-    y_df = pd.read_csv('data/deepsat-sat6/y_train_sat6.csv', header=None, sep=',', nrows=rows)
+    y_df = pd.read_csv(y_url, header=None, sep=',', nrows=rows)
     y_train = np.array(y_df)
     return (X_train, y_train)
 
