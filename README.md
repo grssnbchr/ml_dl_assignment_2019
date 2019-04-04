@@ -1,4 +1,4 @@
-# Land cover classification from airborne imagery using shallow learning
+# Land cover classification from airborne imagery
 
 ## Important links
 
@@ -20,6 +20,8 @@
 * NVDI: https://en.wikipedia.org/wiki/Normalized_difference_vegetation_index
 * Using Sklearn with Keras: https://machinelearningmastery.com/use-keras-deep-learning-models-scikit-learn-python/
 * Grid Search for Deep Learning: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
+
+## Shallow learning
 
 ### Results 
 
@@ -83,3 +85,8 @@ weighted avg       0.99      0.99      0.99      6480
 ```
 
 * Adding NVDI made the f1-score for the 4th class a bit better by 2 percentage points
+
+#### Standardization, NDVI, stats extracted, optimized model after randomized grid search
+
+* Validation accuracy: 
+* Test set accuracy:
