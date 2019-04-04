@@ -20,6 +20,8 @@
 * NVDI: https://en.wikipedia.org/wiki/Normalized_difference_vegetation_index
 * Using Sklearn with Keras: https://machinelearningmastery.com/use-keras-deep-learning-models-scikit-learn-python/
 * Grid Search for Deep Learning: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
+* AutoKeras Tutorial: https://www.pyimagesearch.com/2019/01/07/auto-keras-and-automl-a-getting-started-guide/
+* Setting up Kaggle in Google Colab: https://towardsdatascience.com/setting-up-kaggle-in-google-colab-ebb281b61463
 
 ## Shallow learning
 
