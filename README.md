@@ -21,6 +21,7 @@
 * Using Sklearn with Keras: https://machinelearningmastery.com/use-keras-deep-learning-models-scikit-learn-python/
 * Grid Search for Deep Learning: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
 * AutoKeras Tutorial: https://www.pyimagesearch.com/2019/01/07/auto-keras-and-automl-a-getting-started-guide/
+* Another very exhaustive AutoKeras Tutorial: https://www.simonwenkel.com/2018/08/29/introduction-to-autokeras.html
 * Setting up Kaggle in Google Colab: https://towardsdatascience.com/setting-up-kaggle-in-google-colab-ebb281b61463
 
 ## Shallow learning
@@ -88,7 +89,24 @@ weighted avg       0.99      0.99      0.99      6480
 
 * Adding NVDI made the f1-score for the 4th class a bit better by 2 percentage points
 
-#### Standardization, NDVI, stats extracted, optimized model after randomized grid search
+ #### Standardization, NDVI, stats extracted, optimized model after randomized grid search
 
-* Validation accuracy: 
-* Test set accuracy:
+
+Validation accuracy: 99.0%
+Test set accuracy: 99.0%
+winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 'rf__n_estimators': 733, 'rf__min_samples_leaf': 1, 'rf__max_features': 'sqrt', 'rf__max_depth': 110, 'rf__bootstrap': False, 'nvdiadder': AddNVDI()}
+
+## Deep learning
+
+### Results 
+
+10% of the data, 0.8:0.2 train:validation
+
+All examples without preprocessing (except normalization) and all 4 base channels.
+
+* Simple CNN with ~700k params, after 30 epochs (30mins training): 97.1%
+
+* Best model after 3 hours of neural architecture search: 
+
+* Test set accuracy of the latter:
+
