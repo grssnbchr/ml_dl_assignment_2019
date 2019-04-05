@@ -19,7 +19,7 @@ from customtransformers import NDStandardScaler, StatisticsExtractor, AddNVDI, R
 
 def main():
     # 1. Load train data
-    (X_train, y_train) = load_train_data(0.1)
+    (X_train, y_train) = load_train_data(test=False, fraction=0.1)
     sample_size = len(X_train)
     # create a 20% hold-out-validation set
     X_train, X_val, y_train, y_val = create_validation_set(X_train, y_train, fraction=0.2, show_class_balance=False)
