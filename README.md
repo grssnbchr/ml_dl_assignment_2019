@@ -93,7 +93,7 @@ weighted avg       0.99      0.99      0.99      6480
 
 * Validation accuracy: 99.0%
 * Test set accuracy: 99.0%
-* winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 'rf__n_estimators': 733, 'rf__min_samples_leaf': 1, 'rf__max_features': 'sqrt', 'rf__max_depth': 110, 'rf__bootstrap': False, 'nvdiadder': AddNVDI()}
+* winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 'rf__n_estimators': 1788, 'rf__min_samples_leaf': 1, 'rf__max_features': 'sqrt', 'rf__max_depth': 50, 'rf__bootstrap': False, 'nvdiadder': AddNVDI()}
 
 ## Deep learning
 
