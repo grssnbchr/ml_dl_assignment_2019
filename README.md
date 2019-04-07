@@ -100,13 +100,38 @@ winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 
 
 ### Results 
 
-10% of the data, 0.8:0.2 train:validation
-
 All examples without preprocessing (except normalization) and all 4 base channels.
 
-* Simple CNN with ~700k params, after 30 epochs (30mins training): 97.1%
+* Simple CNN with ~700k params, after 30 epochs (40mins training):
 
-* Best model after 3 hours of neural architecture search: 
+test set accuracy according to sklearn.accuracy_score: 0.9734320987654321
+              precision    recall  f1-score   support
 
-* Test set accuracy of the latter:
+           0       0.94      0.93      0.93      3714
+           1       0.97      0.97      0.97     18367
+           2       0.99      0.97      0.98     14185
+           3       0.92      0.95      0.94     12596
+           4       0.86      0.89      0.87      2070
+           5       1.00      1.00      1.00     30068
+
+   micro avg       0.97      0.97      0.97     81000
+   macro avg       0.95      0.95      0.95     81000
+weighted avg       0.97      0.97      0.97     81000
+
+
+* Best model after 2 hours of neural architecture search: 
+
+test set accuracy according to sklearn.accuracy_score: 0.9922592592592593
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      0.99      3714
+           1       0.99      0.99      0.99     18367
+           2       1.00      0.99      0.99     14185
+           3       0.97      0.98      0.98     12596
+           4       1.00      0.97      0.98      2070
+           5       1.00      1.00      1.00     30068
+
+   micro avg       0.99      0.99      0.99     81000
+   macro avg       0.99      0.99      0.99     81000
+weighted avg       0.99      0.99      0.99     81000
 
