@@ -91,10 +91,9 @@ weighted avg       0.99      0.99      0.99      6480
 
  #### Standardization, NDVI, stats extracted, optimized model after randomized grid search
 
-
-Validation accuracy: 99.0%
-Test set accuracy: 99.0%
-winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 'rf__n_estimators': 733, 'rf__min_samples_leaf': 1, 'rf__max_features': 'sqrt', 'rf__max_depth': 110, 'rf__bootstrap': False, 'nvdiadder': AddNVDI()}
+* Validation accuracy: 99.0%
+* Test set accuracy: 99.0%
+* winning params: {'statsextractor': StatisticsExtractor(), 'standardizer': None, 'rf__n_estimators': 733, 'rf__min_samples_leaf': 1, 'rf__max_features': 'sqrt', 'rf__max_depth': 110, 'rf__bootstrap': False, 'nvdiadder': AddNVDI()}
 
 ## Deep learning
 
@@ -104,6 +103,7 @@ All examples without preprocessing (except normalization) and all 4 base channel
 
 * Simple CNN with ~700k params, after 30 epochs (40mins training):
 
+```
 test set accuracy according to sklearn.accuracy_score: 0.9734320987654321
               precision    recall  f1-score   support
 
@@ -117,11 +117,13 @@ test set accuracy according to sklearn.accuracy_score: 0.9734320987654321
    micro avg       0.97      0.97      0.97     81000
    macro avg       0.95      0.95      0.95     81000
 weighted avg       0.97      0.97      0.97     81000
+```
 
+* Best model after 2 hours of neural architecture search (NAS): 
 
-* Best model after 2 hours of neural architecture search: 
-
+```
 test set accuracy according to sklearn.accuracy_score: 0.9922592592592593
+
               precision    recall  f1-score   support
 
            0       0.99      1.00      0.99      3714
@@ -134,4 +136,4 @@ test set accuracy according to sklearn.accuracy_score: 0.9922592592592593
    micro avg       0.99      0.99      0.99     81000
    macro avg       0.99      0.99      0.99     81000
 weighted avg       0.99      0.99      0.99     81000
-
+```
