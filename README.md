@@ -1,9 +1,15 @@
 # Land cover classification from airborne imagery
 
+## Instructions
+
+* The ML assignment resides in `main.py` and the write-up in `notebooks/ML\ Assignment.ipynb`. Anaconda was used to install the requirements in `requirements.txt`.
+* The DL assignment is (only) a notebook which resides in `notebooks/DL\ Assignment.ipynb`. The poster (Scribus file) resides in `dl_poster`.
+* In order for scripts/notebooks to run, the `data` folder needs to be created and populated with a `deepsat-sat6` folder that contains the training and testing data as extracted from the [Kaggle download](https://www.kaggle.com/crawford/deepsat-sat6).
+
 ## Important links
 
 * Original dataset: https://csc.lsu.edu/~saikat/deepsat/
-* Kaggle: https://www.kaggle.com/crawford/deepsat-sat6#X_test_sat6.csv
+* Kaggle: https://www.kaggle.com/crawford/deepsat-sat6
 
 ### Resources
 
